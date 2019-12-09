@@ -1,0 +1,50 @@
+---
+
+
+- name: Install OpenVPN
+  become: true
+  hosts: debian
+  tasks: 
+    - name: Update apt packages
+      apt:
+        upgrade: yes
+    
+    - name: Install OpenVPN
+      apt:
+        name: ['openvpn', 'easy-rsa', 'vim']
+        state: present
+
+    - name: Creates directory
+      file:
+        path: '{{ ansible_env.HOME }}/openvpn-ca'
+        state: directory
+
+    - name: remove vars file
+      file: 
+        path: '{{ ansible_env.HOME }}/openvpn-ca/vars'
+        state: absent
+
+    - name: create vars file
+      file: 
+        path: '{{ ansible_env.HOME }}/openvpn-ca/vars'
+        state: touch
+
+    - name: Customize CA variable configuration
+      lineinfile:
+        dest: "{{ ansible_env.HOME }}/openvpn-ca/vars"
+        regexp: "^{{ item.property | regex_escape() }}="
+        line: "{{ item.property }}={{ item.value }}"
+      with_items:
+        - { property: 'export KEY_NAME', value: '"server"' }
+        - { property: 'export KEY_COUNTRY', value: '"AR"' }
+        - { property: 'export KEY_PROVINCE', value: '"BA"' }
+        - { property: 'export KEY_CITY', value: '"LaPlata"' }
+        - { property: 'export KEY_ORG', value: '"UNLP"' }
+        - { property: 'export KEY_EMAIL', value: '"fgasquez@cespi.unlp.edu.ar"' }
+
+    - name: Build
+      shell: >
+        source vars
+      args: 
+        chdir: "{{ ansible_env.HOME }}/openvpn-ca/"
+        executable: /bin/bash
