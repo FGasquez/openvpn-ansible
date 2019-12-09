@@ -1,0 +1,45 @@
+---
+    - name: Upgrade packages
+      become: true
+      apt: 
+        upgrade: yes
+
+    - name: Install packages
+      become: true
+      apt:
+        name: ['vim', 'ntp', 'molly-guard', 'fail2ban', 'iotop', 'ngrep', 'tmux', 'ngrep', 'tar', 'sudo', 'whois', 'net-tools']
+        state: present
+
+    - name: create sysadmins group
+      become: true
+      group:
+        name: sysadmins
+        state: present
+    
+    - name: sysadmins group passwordless sudo
+      become: true
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%sysadmins'
+        line: '%sysadmins ALL=(ALL) NOPASSWD: ALL'
+
+    - name: Add sysadmins users
+      become: true
+      user: 
+        name: "{{ item }}"
+        group: sysadmins
+        append: yes
+      with_items: "{{ users }}"
+
+    - name: Set up authorized keys for fgasquez
+      become: true
+      authorized_key: user=fgasquez key="{{item}}"
+      with_file:
+        - "{{ role_path }}/files/fgasquez/id_rsa.pub"
+
+    - name: Set up authorized keys for asabolansky
+      become: true
+      authorized_key: user=asabolansky key="{{item}}"
+      with_file:
+        - "{{ role_path }}/files/asabolansky/id_rsa.pub"
